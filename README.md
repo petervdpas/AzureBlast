@@ -1,5 +1,7 @@
 # AzureBlast
 
+![RoadWarrior](https://raw.githubusercontent.com/petervdpas/AzureBlast/master/assets/icon.png)
+
 **AzureBlast** is a lightweight, injectable .NET library that simplifies working with **Azure services**—including **SQL Server**, **Service Bus**, **Key Vault**, **Table Storage**, and **ARM (Resource Manager)**—from applications, scripts, and tools. It’s designed to be DI-friendly and easy to unit test.
 
 ## ✨ Features
