@@ -27,7 +27,6 @@
         <RepositoryUrl>https://github.com/petervdpas/GuiBlast</RepositoryUrl>
         <RepositoryType>git</RepositoryType>
         <RestoreLockedMode>true</RestoreLockedMode>
-        
     </PropertyGroup>
 
     <ItemGroup>
@@ -43,8 +42,8 @@
     </ItemGroup>
 
     <ItemGroup>
-        <None Include="assets/icon.png" Pack="true" PackagePath="assets/"/>
-        <None Include="assets/LICENSE.txt" Pack="true" PackagePath="assets/"/>
+        <None Include="../assets/icon.png" Pack="true" PackagePath="assets/"/>
+        <None Include="../assets/LICENSE.txt" Pack="true" PackagePath="assets/"/>
         <None Include="../README.md" Pack="true" PackagePath=""/>
     </ItemGroup>
     
