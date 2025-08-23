@@ -88,22 +88,25 @@ services
 var sp = services.BuildServiceProvider();
 ```
 
-### 3) No-DI / Script usage (LINQPad, PowerShell, console)
+### 3) Adhoc (no DI) via `AzureBlastFactory` — scripts, LINQPad, PowerShell
 
 ```csharp
 using AzureBlast;
-using Azure.Identity;
 
-// Build a provider with options:
+// Build a provider ad-hoc with options (no IServiceCollection needed)
 var sp = AzureBlastFactory.CreateServiceProvider(o =>
 {
     o.TableStorageConnectionString = "UseDevelopmentStorage=true;";
     o.TableName = "MyTable";
 });
 
-// Or construct individual services directly:
-var kv = AzureBlastFactory.CreateKeyVault("https://contoso.vault.azure.net/");
-var sb = AzureBlastFactory.CreateServiceBus("<sb-connection-string>", "orders");
+// Or construct exactly what you need, directly:
+var db = AzureBlastFactory.CreateDatabase("Server=.;Database=App;Trusted_Connection=True;");
+var kv = AzureBlastFactory.CreateKeyVault("https://contoso.vault.azure.net/");        // or CreateKeyVaultAsync(...)
+var sb = AzureBlastFactory.CreateServiceBus("<sb-conn>", "orders");
+var ts = AzureBlastFactory.CreateTableStorage("UseDevelopmentStorage=true;", "MyTable");
+var arm = AzureBlastFactory.CreateArmClientWrapper();
+var rc  = AzureBlastFactory.CreateResourceClient();
 ```
 
 ---
