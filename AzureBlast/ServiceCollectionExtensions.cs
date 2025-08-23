@@ -1,34 +1,62 @@
 ﻿using System;
-using Azure.Core;
 using Azure.Identity;
 using AzureBlast.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions; // for TryAdd*
 
 namespace AzureBlast;
 
 /// <summary>
-///     Provides extension methods for registering AzureBlast services with a dependency injection container.
-///     All components are registered optionally based on the provided configuration.
+/// Extension methods for registering AzureBlast services with a dependency injection container.
 /// </summary>
+/// <remarks>
+/// This registration is idempotent: it uses <c>TryAdd*</c> so your own registrations (added
+/// earlier in the pipeline) won't be overwritten or duplicated.
+/// <para/>
+/// Only components you configure in <see cref="AzureBlastOptions"/> are registered. Unset or empty
+/// options are ignored.
+/// </remarks>
 public static class ServiceCollectionExtensions
 {
     /// <summary>
-    ///     Registers one or more AzureBlast services optionally via the <see cref="AzureBlastOptions" /> config.
+    /// Registers one or more AzureBlast services based on the supplied <see cref="AzureBlastOptions"/>.
     /// </summary>
-    /// <param name="services">The service collection to register services with.</param>
-    /// <param name="configure">A delegate to configure <see cref="AzureBlastOptions" />.</param>
-    /// <returns>The updated service collection.</returns>
+    /// <param name="services">The target <see cref="IServiceCollection"/> to populate.</param>
+    /// <param name="configure">Delegate that populates an <see cref="AzureBlastOptions"/> instance.</param>
+    /// <returns>The same <see cref="IServiceCollection"/> for chaining.</returns>
+    /// <exception cref="ArgumentNullException">
+    /// Thrown when <paramref name="services"/> or <paramref name="configure"/> is <see langword="null"/>.
+    /// </exception>
+    /// <example>
+    /// <code>
+    /// services.AddAzureBlast(o =>
+    /// {
+    ///     o.SqlConnectionString = "...";
+    ///     o.KeyVaultUrl = "https://contoso.vault.azure.net/";
+    ///     o.TableStorageConnectionString = "...";
+    ///     o.TableName = "MyTable";
+    ///     o.ServiceBusConnectionString = "...";
+    ///     o.ServiceBusQueueName = "orders";
+    ///     // Optional credential override; otherwise DefaultAzureCredential is used:
+    ///     // o.Credential = new DefaultAzureCredential();
+    /// });
+    /// </code>
+    /// </example>
     public static IServiceCollection AddAzureBlast(this IServiceCollection services, Action<AzureBlastOptions> configure)
     {
+        ArgumentNullException.ThrowIfNull(services);
+        ArgumentNullException.ThrowIfNull(configure);
+
         var options = new AzureBlastOptions();
         configure(options);
 
+        // Choose credential: provided via options or DefaultAzureCredential.
         var credential = options.Credential ?? new DefaultAzureCredential();
 
         // Optional: SQL Database
         if (!string.IsNullOrWhiteSpace(options.SqlConnectionString))
         {
-            services.AddTransient<IMssqlDatabase>(sp =>
+            services.TryAddTransient<IMssqlDatabase>(_ =>
             {
                 var db = new MssqlDatabase();
                 db.Setup(options.SqlConnectionString!);
@@ -39,18 +67,18 @@ public static class ServiceCollectionExtensions
         // Optional: Azure Key Vault
         if (!string.IsNullOrWhiteSpace(options.KeyVaultUrl))
         {
-            services.AddSingleton<IAzureKeyVault>(sp =>
+            services.TryAddSingleton<IAzureKeyVault>(_ =>
             {
                 var vault = new AzureKeyVault(credential);
-                // sync-init is ok here since you're already doing it
+                // Synchronous init here is acceptable when composing the container at startup.
                 vault.InitializeKeyVaultAsync(options.KeyVaultUrl!).GetAwaiter().GetResult();
                 return vault;
             });
         }
 
-        // Optional: Azure ARM client (needs wrapper first)
-        services.AddSingleton<IArmClientWrapper>(new ArmClientWrapper(credential));
-        services.AddSingleton<IAzureResourceClient>(sp =>
+        // Optional: Azure ARM client (wrapper) and resource client
+        services.TryAddSingleton<IArmClientWrapper>(_ => new ArmClientWrapper(credential));
+        services.TryAddSingleton<IAzureResourceClient>(sp =>
         {
             var wrapper = sp.GetRequiredService<IArmClientWrapper>();
             return new AzureResourceClient(wrapper);
@@ -60,10 +88,10 @@ public static class ServiceCollectionExtensions
         if (!string.IsNullOrWhiteSpace(options.ServiceBusConnectionString) &&
             !string.IsNullOrWhiteSpace(options.ServiceBusQueueName))
         {
-            services.AddSingleton<IAzureServiceBus>(sp =>
+            services.TryAddSingleton<IAzureServiceBus>(_ =>
             {
                 var sb = new AzureServiceBus();
-                sb.Setup(options.ServiceBusConnectionString, options.ServiceBusQueueName);
+                sb.Setup(options.ServiceBusConnectionString!, options.ServiceBusQueueName!);
                 return sb;
             });
         }
@@ -71,10 +99,10 @@ public static class ServiceCollectionExtensions
         // Optional: Azure Table Storage
         if (!string.IsNullOrWhiteSpace(options.TableStorageConnectionString))
         {
-            services.AddSingleton<IAzureTableStorage>(sp =>
+            services.TryAddSingleton<IAzureTableStorage>(_ =>
             {
                 var table = new AzureTableStorage();
-                table.Initialize(options.TableStorageConnectionString, options.TableName);
+                table.Initialize(options.TableStorageConnectionString!, options.TableName);
                 return table;
             });
         }

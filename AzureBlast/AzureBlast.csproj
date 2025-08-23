@@ -4,6 +4,30 @@
         <TargetFramework>net8.0</TargetFramework>
         <ImplicitUsings>disable</ImplicitUsings>
         <Nullable>enable</Nullable>
+        <IsPackable>true</IsPackable>
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
+        <PackageOutputPath>bin\$(Configuration)</PackageOutputPath>
+        <DocumentationFile>bin\$(Configuration)\$(TargetFramework)\$(AssemblyName).xml</DocumentationFile>
+        <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+        <PackageId>AzureBlast</PackageId>
+        <Version>1.0.0</Version>
+        <Authors>Peter van de Pas</Authors>
+        <Description>AzureBlast — A lightweight, injectable .NET library for working with Azure SQL, Service Bus, and Key Vault from apps, LINQPad, or PowerShell.</Description>
+        <PackageTags>Azure;Mssql;LINQPad;PowerShell</PackageTags>
+        <PackageLicenseFile>assets/LICENSE.txt</PackageLicenseFile>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
+        <PackageIcon>assets/icon.png</PackageIcon>
+        <DebugType>embedded</DebugType>
+        <Deterministic>true</Deterministic>
+        <PathMap>$(MSBuildProjectDirectory)=.</PathMap>
+        <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
+        <PublishRepositoryUrl>true</PublishRepositoryUrl>
+        <EmbedUntrackedSources>true</EmbedUntrackedSources>
+        <EnableSourceLink>true</EnableSourceLink>
+        <RepositoryUrl>https://github.com/petervdpas/GuiBlast</RepositoryUrl>
+        <RepositoryType>git</RepositoryType>
+        <RestoreLockedMode>true</RestoreLockedMode>
+        
     </PropertyGroup>
 
     <ItemGroup>
@@ -18,6 +42,12 @@
       <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
     </ItemGroup>
 
+    <ItemGroup>
+        <None Include="assets/icon.png" Pack="true" PackagePath="assets/"/>
+        <None Include="assets/LICENSE.txt" Pack="true" PackagePath="assets/"/>
+        <None Include="../README.md" Pack="true" PackagePath=""/>
+    </ItemGroup>
+    
     <ItemGroup>
         <InternalsVisibleTo Include="AzureBlast.Tests" />
     </ItemGroup>
