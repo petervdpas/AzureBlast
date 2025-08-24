@@ -87,7 +87,7 @@ public async Task SendBatchMessagesAsync_Sends_In_One_Batch_When_Fits()
     mockSender.Setup(s => s.SendMessagesAsync(mockBatch.Object, It.IsAny<CancellationToken>()))
               .Returns(Task.CompletedTask);
 
-    var sut = new AzureServiceBus(client: _client.Object, senderFactory: (_, __) => mockSender.Object);
+    var sut = new AzureServiceBus(client: _client.Object, senderFactory: (_, _) => mockSender.Object);
     sut.Setup("Endpoint=sb://fake/;SharedAccessKeyName=x;SharedAccessKey=y", "q1");
 
     var payloads = new List<string> { "a", "b", "c" };
@@ -115,7 +115,7 @@ public async Task SendBatchMessagesAsync_Splits_Into_Multiple_Batches_When_Full(
     batch2.SetupGet(b => b.Count).Returns(1);
     batch2.Setup(b => b.TryAddMessage(It.IsAny<ServiceBusMessage>())).Returns(true);
 
-    var batches = new Queue<IMessageBatch>(new[] { batch1.Object, batch2.Object });
+    var batches = new Queue<IMessageBatch>([batch1.Object, batch2.Object]);
 
     mockSender.Setup(s => s.CreateMessageBatchAsync(It.IsAny<CancellationToken>()))
               .ReturnsAsync(() => batches.Dequeue());
@@ -125,10 +125,10 @@ public async Task SendBatchMessagesAsync_Splits_Into_Multiple_Batches_When_Full(
     mockSender.Setup(s => s.SendMessagesAsync(batch2.Object, It.IsAny<CancellationToken>()))
               .Returns(Task.CompletedTask);
 
-    var sut = new AzureServiceBus(client: _client.Object, senderFactory: (_, __) => mockSender.Object);
+    var sut = new AzureServiceBus(client: _client.Object, senderFactory: (_, _) => mockSender.Object);
     sut.Setup("Endpoint=sb://fake/;SharedAccessKeyName=x;SharedAccessKey=y", "q1");
 
-    await sut.SendBatchMessagesAsync(new List<string> { "m1", "m2", "m3" });
+    await sut.SendBatchMessagesAsync(["m1", "m2", "m3"]);
 
     batch1.Verify(b => b.TryAddMessage(It.IsAny<ServiceBusMessage>()), Times.Exactly(3));
     mockSender.Verify(s => s.SendMessagesAsync(batch1.Object, It.IsAny<CancellationToken>()), Times.Once);
@@ -239,7 +239,7 @@ public async Task SendBatchMessagesAsync_Splits_Into_Multiple_Batches_When_Full(
         var sut = new AzureServiceBus(_client.Object);
 
         await Assert.ThrowsAsync<InvalidOperationException>(() => sut.SendMessageAsync("x"));
-        await Assert.ThrowsAsync<InvalidOperationException>(() => sut.SendBatchMessagesAsync(new List<string> { "x" }));
+        await Assert.ThrowsAsync<InvalidOperationException>(() => sut.SendBatchMessagesAsync(["x"]));
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
             sut.SendScheduledMessageAsync("x", DateTimeOffset.UtcNow));
         await Assert.ThrowsAsync<InvalidOperationException>(() => sut.ReceiveMessagesAsync());
