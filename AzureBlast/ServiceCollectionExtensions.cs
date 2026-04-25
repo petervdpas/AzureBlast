@@ -53,8 +53,17 @@ public static class ServiceCollectionExtensions
         // Choose credential: provided via options or DefaultAzureCredential.
         var credential = options.Credential ?? new DefaultAzureCredential();
 
-        // Optional: SQL Database
-        if (!string.IsNullOrWhiteSpace(options.SqlConnectionString))
+        // Optional: SQL Database — resolver path takes precedence when configured.
+        if (options.Resolver is not null && !string.IsNullOrWhiteSpace(options.SqlConnectionName))
+        {
+            services.TryAddTransient<IMssqlDatabase>(_ =>
+            {
+                var db = new MssqlDatabase();
+                db.SetupAsync(options.Resolver!, options.SqlConnectionName!).GetAwaiter().GetResult();
+                return db;
+            });
+        }
+        else if (!string.IsNullOrWhiteSpace(options.SqlConnectionString))
         {
             services.TryAddTransient<IMssqlDatabase>(_ =>
             {
@@ -64,8 +73,18 @@ public static class ServiceCollectionExtensions
             });
         }
 
-        // Optional: Azure Key Vault
-        if (!string.IsNullOrWhiteSpace(options.KeyVaultUrl))
+        // Optional: Azure Key Vault — resolver path takes precedence when configured.
+        if (options.Resolver is not null && !string.IsNullOrWhiteSpace(options.KeyVaultConnectionName))
+        {
+            services.TryAddSingleton<IAzureKeyVault>(_ =>
+            {
+                var vault = new AzureKeyVault(credential);
+                vault.InitializeKeyVaultAsync(options.Resolver!, options.KeyVaultConnectionName!)
+                    .GetAwaiter().GetResult();
+                return vault;
+            });
+        }
+        else if (!string.IsNullOrWhiteSpace(options.KeyVaultUrl))
         {
             services.TryAddSingleton<IAzureKeyVault>(_ =>
             {
@@ -84,9 +103,18 @@ public static class ServiceCollectionExtensions
             return new AzureResourceClient(wrapper);
         });
 
-        // Optional: Azure Service Bus
-        if (!string.IsNullOrWhiteSpace(options.ServiceBusConnectionString) &&
-            !string.IsNullOrWhiteSpace(options.ServiceBusQueueName))
+        // Optional: Azure Service Bus — resolver path takes precedence when configured.
+        if (options.Resolver is not null && !string.IsNullOrWhiteSpace(options.ServiceBusConnectionName))
+        {
+            services.TryAddSingleton<IAzureServiceBus>(_ =>
+            {
+                var sb = new AzureServiceBus();
+                sb.SetupAsync(options.Resolver!, options.ServiceBusConnectionName!).GetAwaiter().GetResult();
+                return sb;
+            });
+        }
+        else if (!string.IsNullOrWhiteSpace(options.ServiceBusConnectionString) &&
+                 !string.IsNullOrWhiteSpace(options.ServiceBusQueueName))
         {
             services.TryAddSingleton<IAzureServiceBus>(_ =>
             {
@@ -96,8 +124,17 @@ public static class ServiceCollectionExtensions
             });
         }
 
-        // Optional: Azure Table Storage
-        if (!string.IsNullOrWhiteSpace(options.TableStorageConnectionString))
+        // Optional: Azure Table Storage — resolver path takes precedence when configured.
+        if (options.Resolver is not null && !string.IsNullOrWhiteSpace(options.TableConnectionName))
+        {
+            services.TryAddSingleton<IAzureTableStorage>(_ =>
+            {
+                var table = new AzureTableStorage();
+                table.InitializeAsync(options.Resolver!, options.TableConnectionName!).GetAwaiter().GetResult();
+                return table;
+            });
+        }
+        else if (!string.IsNullOrWhiteSpace(options.TableStorageConnectionString))
         {
             services.TryAddSingleton<IAzureTableStorage>(_ =>
             {

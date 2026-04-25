@@ -12,6 +12,7 @@
 * **Azure Table Storage** – list tables, set a table, upsert/query/delete entities.
 * **Azure Resource Manager (ARM)** – list subscriptions, set subscription context, query resources.
 * **Two DI styles** – options-based `AddAzureBlast(...)` **or** a fluent builder via `UseAzureBlast(...)`.
+* **Vault-agnostic resolver path** *(new in 2.1)* – reference connections by logical name and let any `Func<category, key, ct, Task<string>>` delegate (e.g. `Secrets.Resolver` from TaskBlaster / SecretBlast) hydrate the values.
 * **Script-friendly** – `AzureBlastFactory` for LINQPad/PowerShell/console scenarios.
 * **Testable** – interfaces and adapters to mock sealed SDK types.
 
@@ -90,7 +91,57 @@ services
 var sp = services.BuildServiceProvider();
 ```
 
-### 3) Adhoc (no DI) via `AzureBlastFactory` — scripts, LINQPad, PowerShell
+### 3) Resolver-driven (vault-backed connection lookup) — *new in 2.1*
+
+If you store connection details in a vault (or any other secret store), wire a
+`Func<category, key, ct, Task<string>>` resolver delegate and reference each
+connection by a logical name. AzureBlast pulls the values at registration time;
+the library itself stays free of any vault dependency.
+
+```csharp
+using AzureBlast;
+using Microsoft.Extensions.DependencyInjection;
+
+var services = new ServiceCollection();
+
+services.AddAzureBlast(o =>
+{
+    // Wire your resolver — typically Secrets.Resolver from TaskBlaster / SecretBlast.
+    o.Resolver = (category, key, ct) => myVault.ResolveAsync(category, key, ct);
+
+    // Reference connections by logical name; values come from the resolver:
+    o.SqlConnectionName        = "azure-prod-sql";   // → (azure-prod-sql, "connectionString")
+    o.ServiceBusConnectionName = "orders";           // → (orders, "connectionString" + "queueName")
+    o.TableConnectionName      = "events";           // → (events, "connectionString" + "tableName")
+    o.KeyVaultConnectionName   = "kv-prod";          // → (kv-prod, "url")
+});
+```
+
+You can mix the resolver path with the string path freely — set whichever
+fields make sense per component. The resolver path takes precedence when both
+are configured for the same component.
+
+You can also call the resolver-aware overloads directly on a component you
+build by hand:
+
+```csharp
+var db = new MssqlDatabase();
+await db.SetupAsync(myVault.ResolveAsync, "azure-prod-sql");
+
+var sb = new AzureServiceBus();
+await sb.SetupAsync(myVault.ResolveAsync, "orders");
+
+var tbl = new AzureTableStorage();
+await tbl.InitializeAsync(myVault.ResolveAsync, "events");
+
+var kv = new AzureKeyVault(new DefaultAzureCredential());
+await kv.InitializeKeyVaultAsync(myVault.ResolveAsync, "kv-prod");
+```
+
+Each overload accepts optional `*Key` parameters for callers whose vault uses
+non-default field names (e.g. `connectionStringKey: "dsn"`).
+
+### 4) Adhoc (no DI) via `AzureBlastFactory` — scripts, LINQPad, PowerShell
 
 ```csharp
 using AzureBlast;

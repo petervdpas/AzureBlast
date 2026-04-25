@@ -1,4 +1,7 @@
-﻿using Azure.Core;
+﻿using System;
+using System.Threading;
+using System.Threading.Tasks;
+using Azure.Core;
 using AzureBlast.Interfaces;
 
 namespace AzureBlast;
@@ -87,4 +90,40 @@ public class AzureBlastOptions
     /// Provide an explicit credential when running outside Azure or when using custom auth flows.
     /// </remarks>
     public TokenCredential? Credential { get; set; }
+
+    /// <summary>
+    /// Optional secret resolver delegate used by the resolver-based registration path
+    /// (shape: <c>Func&lt;category, key, ct, Task&lt;string&gt;&gt;</c>). When set together
+    /// with one or more <c>*ConnectionName</c> properties, registration looks up
+    /// connection values through this delegate at startup instead of from the
+    /// raw string properties.
+    /// </summary>
+    /// <remarks>
+    /// Compatible with <c>Secrets.Resolver</c> from TaskBlaster / SecretBlast.
+    /// AzureBlast itself takes no dependency on any vault implementation.
+    /// </remarks>
+    public Func<string, string, CancellationToken, Task<string>>? Resolver { get; set; }
+
+    /// <summary>
+    /// Logical connection name used by the resolver to fetch the SQL connection string
+    /// (under key <c>connectionString</c> by default).
+    /// </summary>
+    public string? SqlConnectionName { get; set; }
+
+    /// <summary>
+    /// Logical connection name used by the resolver to fetch the Service Bus
+    /// connection string (<c>connectionString</c>) and queue name (<c>queueName</c>).
+    /// </summary>
+    public string? ServiceBusConnectionName { get; set; }
+
+    /// <summary>
+    /// Logical connection name used by the resolver to fetch the Table Storage
+    /// connection string (<c>connectionString</c>) and optional table name (<c>tableName</c>).
+    /// </summary>
+    public string? TableConnectionName { get; set; }
+
+    /// <summary>
+    /// Logical connection name used by the resolver to fetch the Key Vault URL (<c>url</c>).
+    /// </summary>
+    public string? KeyVaultConnectionName { get; set; }
 }
