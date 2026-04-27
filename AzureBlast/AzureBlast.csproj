@@ -10,7 +10,7 @@
         <DocumentationFile>bin\$(Configuration)\$(TargetFramework)\$(AssemblyName).xml</DocumentationFile>
         <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
         <PackageId>AzureBlast</PackageId>
-        <Version>2.1.0</Version>
+        <Version>2.1.1</Version>
         <Authors>Peter van de Pas</Authors>
         <Description>AzureBlast — A lightweight, injectable .NET library for working with Azure SQL, Service Bus, and Key Vault from apps, LINQPad, or PowerShell.</Description>
         <PackageTags>Azure;Mssql;LINQPad;PowerShell</PackageTags>
@@ -50,5 +50,18 @@
     <ItemGroup>
         <InternalsVisibleTo Include="AzureBlast.Tests" />
     </ItemGroup>
-    
+
+    <!--
+        Blast-family convention: declare the canonical front-door type(s)
+        of this assembly so AI assistants (e.g. TaskBlaster's script
+        helper) can identify the entry points without having to scan
+        every public type. Comma-separated, fully-qualified.
+    -->
+    <ItemGroup>
+        <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+            <_Parameter1>Blast.PrimaryFacade</_Parameter1>
+            <_Parameter2>AzureBlast.MssqlDatabase,AzureBlast.AzureServiceBus,AzureBlast.AzureTableStorage,AzureBlast.AzureKeyVault</_Parameter2>
+        </AssemblyAttribute>
+    </ItemGroup>
+
 </Project>

@@ -320,3 +320,32 @@ var bus = sp.GetRequiredService<AzureBlast.Interfaces.IAzureServiceBus>();
 
 await bus.SendMessageAsync("""{ "hello": "world" }""");
 ```
+
+---
+
+## 🤖 AI assistants
+
+This assembly carries the **Blast.PrimaryFacade** convention: an
+`[AssemblyMetadata("Blast.PrimaryFacade", "...")]` attribute names the
+canonical front-door type(s) of the package, so AI helpers (e.g.
+TaskBlaster's script assistant) can identify the entry points without
+scanning every public type.
+
+For AzureBlast the front doors are:
+
+| Type | Purpose |
+|------|---------|
+| `AzureBlast.MssqlDatabase` | Azure SQL operations: `Setup`, `SetupAsync`, query helpers. |
+| `AzureBlast.AzureServiceBus` | Service Bus producer / consumer. |
+| `AzureBlast.AzureTableStorage` | Table Storage entity CRUD. |
+| `AzureBlast.AzureKeyVault` | Key Vault secret access. |
+
+Read it back from a loaded assembly via reflection:
+
+```csharp
+var facade = typeof(AzureBlast.MssqlDatabase).Assembly
+    .GetCustomAttributes<AssemblyMetadataAttribute>()
+    .FirstOrDefault(a => a.Key == "Blast.PrimaryFacade")?.Value;
+```
+
+The value is a hint for tooling; consumers don't need to read it.
